@@ -12,10 +12,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Optimal delay for high-speed transaction submission
-INTER_TX_DELAY = 0.1  # 100ms between submissions for ~10 TPS submission rate
+INTER_TX_DELAY = 0.01  # 100ms between submissions for ~10 TPS submission rate
 MAX_TX_TO_SUBMIT = 100_000  # Maximum transactions to submit in one run
-NONCE_REALIGNMENT_ITERATIONS = 10000
-MAX_ACCOUNTS_TO_USE = 160
+NONCE_REALIGNMENT_ITERATIONS = 1000
+MAX_ACCOUNTS_TO_USE = 2000
 
 class ExordeHighSpeedSender:
     def __init__(self):
@@ -178,7 +178,7 @@ class ExordeHighSpeedSender:
         logger.info("🔄 Performing nonce realignment...")
         # first we wait 15s to let the network catch up
         logger.info("   ⏳ Waiting for network to catch up before realigning nonces...")
-        time.sleep(15)
+        time.sleep(30)
         logger.info("   🔄 Realigning nonces with blockchain state...")
         
         realigned_accounts = 0
