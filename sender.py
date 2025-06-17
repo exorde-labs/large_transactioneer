@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 INTER_TX_DELAY = 0.01  # 100ms between submissions for ~10 TPS submission rate
 MAX_TX_TO_SUBMIT = 100_000  # Maximum transactions to submit in one run
 NONCE_REALIGNMENT_ITERATIONS = 1000
-MAX_ACCOUNTS_TO_USE = 2000
+MAX_ACCOUNTS_TO_USE = 200
 
 class ExordeHighSpeedSender:
     def __init__(self):
