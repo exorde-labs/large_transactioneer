@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # Optimal delay for high-speed transaction submission
 INTER_TX_DELAY = 0.01  # 100ms between submissions for ~10 TPS submission rate
 MAX_TX_TO_SUBMIT = 100_000  # Maximum transactions to submit in one run
-NONCE_REALIGNMENT_ITERATIONS = 1000
+NONCE_REALIGNMENT_ITERATIONS = 10000
 MAX_ACCOUNTS_TO_USE = 200
 
 class ExordeHighSpeedSender:
@@ -51,7 +51,7 @@ class ExordeHighSpeedSender:
         # SpotData parameters
         self.spot_data_params = {
             'file_hashs': ["QmUtQJK2YncnLcBL6W9d8xeJzSmThb2CU7mpbdiC4CpkcE"],
-            'url_domains': ["test.com"],
+            'url_domains': [""],
             'item_counts': [0],
             'extra': ""
         }
@@ -232,53 +232,6 @@ class ExordeHighSpeedSender:
             self.account_nonces[address] += 1
             return current_nonce
 
-    def submit_spotdata_transaction_OLD(self, account):
-        """Submit SpotData transaction (fire-and-forget)"""
-        try:
-            address = account['address']
-            private_key = account['private_key']
-            index = account['index']
-            
-            # Get nonce and contract
-            nonce = self.get_next_nonce(address)
-            contract = self.get_next_contract()
-            
-            # Get dynamic gas price
-            w3_read = self.get_next_sync_node()
-            network_gas_price = w3_read.eth.gas_price
-            safe_gas_price = min(network_gas_price + 1000000000, 10000000000)
-            
-            # Build transaction
-            transaction = contract.functions.SpotData(
-                self.spot_data_params['file_hashs'],
-                self.spot_data_params['url_domains'], 
-                self.spot_data_params['item_counts'],
-                self.spot_data_params['extra']
-            ).build_transaction({
-                'from': address,
-                'nonce': nonce,
-                'value': 0,
-                'gas': self.gas_limit,
-                'gasPrice': safe_gas_price,
-                'chainId': int(self.chain_id)
-            })
-            
-            # Sign and submit (no receipt waiting)
-            signed_tx = w3_read.eth.account.sign_transaction(transaction, private_key)
-            w3_write = self.get_next_sync_node()
-            tx_hash = w3_write.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
-            # Update counters
-            self.submissions_count += 1
-            self.successful_submissions += 1
-            
-            return True, tx_hash.hex()
-            
-        except Exception as e:
-            self.failed_submissions += 1
-            logger.error(f"❌ Submission failed from account {index:02d}: {e}")
-            return False, None
-
     def submit_spotdata_transaction(self, account, max_retries=3):
         """Submit SpotData transaction with sync node retry mechanism"""
         try:
@@ -320,7 +273,9 @@ class ExordeHighSpeedSender:
                     
                     # Attempt submission
                     tx_hash = w3_write.eth.send_raw_transaction(signed_tx.rawTransaction)
-                    
+                            
+                    print(f"✅ Submitted transaction from account {index:02d}: {tx_hash.hex()}")
+                # If successful, return immediately    
                     # Success - update counters and return
                     self.submissions_count += 1
                     self.successful_submissions += 1
