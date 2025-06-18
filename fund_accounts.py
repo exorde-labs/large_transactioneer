@@ -14,12 +14,12 @@ logger = logging.getLogger(__name__)
 class ExordeAccountFunder:
     def __init__(self):
         # Configuration
-        self.nb_senders = 200  # Number of sending addresses
-        self.transactioneer_pk_base = "bbbbdeaddeaddead5fb92d83ed54c0ea1eb74e72a84ef980d42953cbbbb"
+        self.nb_senders = 50  # Number of sending addresses
+        self.transactioneer_pk_base = "deaddeaddeaddeaddead2d83ed54c0ff1ebffeffa84ef980d42953cabef" # to CHANGE
         self.main_faucet_pk = "283f433b788b8eb60ca27fc7c5a21efec37d5cb698dc47b364731058fe5ffb85"
         self.accounts_folder = "exorde_accounts"
         self.accounts_file = os.path.join(self.accounts_folder, "accounts.json")
-        self.VALUE_FUNDING = int(0.5 * 10**18)  # 0.5 sFuel in wei
+        self.VALUE_FUNDING = int(1 * 10**18)  # 0.5 sFuel in wei
         
         # Network configuration
         self.w3 = None
@@ -195,8 +195,7 @@ class ExordeAccountFunder:
             target_address = self.w3.to_checksum_address(target_address)
             
             # Get current gas price
-            gas_price = self.w3.eth.gas_price
-            logger.info(f"   ⛽ Gas price: {gas_price} wei")
+            gas_price = 150_000
             
             # Build transaction
             transaction = {
@@ -207,9 +206,6 @@ class ExordeAccountFunder:
                 'value': self.VALUE_FUNDING, 
                 'chainId': int(self.chain_id),
             }
-            
-            logger.info(f"   💸 Funding amount: 0.1 sFUEL")
-            logger.info(f"   📝 Transaction built successfully")
             
             # Sign transaction
             signed_txn = self.w3.eth.account.sign_transaction(transaction, self.main_faucet_pk)
@@ -223,7 +219,7 @@ class ExordeAccountFunder:
             
             # Wait for transaction receipt
             logger.info(f"   ⏳ Waiting for transaction confirmation...")
-            tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=20)
             
             if tx_receipt.status == 1:
                 logger.info(f"   ✅ Transaction confirmed successfully!")
@@ -324,18 +320,8 @@ class ExordeAccountFunder:
                 accounts_data = self.generate_sender_addresses()
                 self.save_accounts_to_file(accounts_data)
             
-            # STEP 1: Show current balances
-            print(f"\n🔍 Found {len(accounts_data)} accounts. Checking current balances...")
-            funded_before, total_before = self.check_account_balances(accounts_data, "CURRENT ACCOUNT BALANCES")
-            
-            # Ask user if they want to fund accounts
-            print(f"\n❓ Ready to fund accounts:")
-            print(f"   • Total accounts: {len(accounts_data)}")
-            print(f"   • Currently funded: {funded_before}")
-            print(f"   • Need funding: {len(accounts_data) - funded_before}")
-            
+
             fund_choice = input("\n🤔 Do you want to proceed with funding? (y/n): ").lower().strip()
-            
             if fund_choice == 'y':
                 # STEP 2: Fund all addresses sequentially
                 successful, results = self.fund_all_addresses_sequential(accounts_data)
@@ -349,10 +335,10 @@ class ExordeAccountFunder:
                     print("\n" + "="*80)
                     print("🎉 FUNDING PROCESS COMPLETED!")
                     print("="*80)
-                    print(f"📊 Before funding: {funded_before} accounts funded ({total_before:.6f} sFUEL)")
+                    # print(f"📊 Before funding: {funded_before} accounts funded ({total_before:.6f} sFUEL)")
                     print(f"📊 After funding:  {funded_after} accounts funded ({total_after:.6f} sFUEL)")
                     print(f"✅ Successfully funded: {successful} accounts")
-                    print(f"💰 Total sFUEL added: {total_after - total_before:.6f} sFUEL")
+                    print(f"💰 Total sFUEL : {total_after:.6f} sFUEL")
                     print(f"📁 Accounts saved in: {self.accounts_folder}/")
                     print(f"📄 Master file: {self.accounts_file}")
                     print("="*80)
