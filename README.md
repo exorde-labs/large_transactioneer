@@ -1,4 +1,12 @@
-transactions as you go from the rest of your application!** The example code showing pre-loading transactions is just one usage pattern, not a limitation.
+Transactions (SpotData) mass parallel sender code. As you go from the rest of your application!
+
+# Code / scripts
+
+- **fund_accounts** is sequentially funding addresses and generating them in exorde_accounts/ folder. It can take 30s or more per address.
+- *quick_funding.py* (optional) is perfect for funding thousands of addresses quickly, from an example of 100-200 funded addresses to others. It can take only a few minutes to fund thousands.
+- **claim_master_all_addresses.py** is to be used once all addresses (used to spot data quickly for Exorde protocol) are funded, to collect rewards on a centralized main address then.
+- **transactioneer_with_queue.py** is a working implementation that can be integrated in any microservice Exorde architecture, whether original or redeveloped. 
+
 
 ## How the Queue System Works
 
