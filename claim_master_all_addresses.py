@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # TARGET CONFIGURATION
-TARGET_MASTER_ADDRESS = "XXXXXXXXXXX YOUR WALLET HERE XXXXXXXXXXXXXXXXXXXX"
+TARGET_MASTER_ADDRESS = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ADDRESS_MANAGER_CONTRACT = "0x797E0E87aDCf9845D2af2c5eee6F226feA3f0eFc"
 
 class SimpleClaimMasterScript:
@@ -30,7 +30,6 @@ class SimpleClaimMasterScript:
         
         # Account management
         self.all_accounts = []
-        self.account_nonces = defaultdict(int)
         
         # Performance tracking
         self.total_claims_attempted = 0
@@ -123,39 +122,18 @@ class SimpleClaimMasterScript:
             logger.error(f"❌ Failed to load accounts: {e}")
             raise
 
-    def initialize_account_nonces(self):
-        """Initialize current nonces for all accounts"""
-        logger.info("🔢 Fetching current nonces for all accounts...")
-        
-        for i, account in enumerate(self.all_accounts):
-            address = account['address']
-            try:
-                current_nonce = self.w3.eth.get_transaction_count(address)
-                self.account_nonces[address] = current_nonce
-                
-                # Log progress every 200 accounts
-                if (i + 1) % 200 == 0:
-                    logger.info(f"   Nonces fetched: {i+1}/{len(self.all_accounts)}")
-                
-            except Exception as e:
-                logger.error(f"❌ Failed to get nonce for {address}: {e}")
-                self.account_nonces[address] = 0
-        
-        logger.info(f"✅ Initialized nonces for {len(self.all_accounts)} accounts")
-
     def claim_master_single_account(self, account):
-        """Claim master for a single account"""
+        """Claim master for a single account - fetches nonce on-demand"""
         try:
             address = account['address']
             private_key = account['private_key']
             index = account['index']
             
-            # Get and increment nonce for this account
-            nonce = self.account_nonces[address]
-            self.account_nonces[address] += 1
+            # Fetch current nonce on-demand for this specific account
+            nonce = self.w3.eth.get_transaction_count(address)
             
             # Get current gas price
-            gas_price = self.w3.eth.gas_price
+            gas_price = 300_000
             
             # Build ClaimMaster transaction
             transaction = self.address_manager_obj.functions.ClaimMaster(
@@ -163,7 +141,7 @@ class SimpleClaimMasterScript:
             ).build_transaction({
                 'from': address,
                 'nonce': nonce,
-                'gas': 200000,  # Generous gas limit for ClaimMaster
+                'gas': 1_000_000,  # Generous gas limit for ClaimMaster
                 'gasPrice': gas_price,
                 'chainId': int(self.chain_id),
             })
@@ -184,28 +162,29 @@ class SimpleClaimMasterScript:
             return False, None
 
     def sequential_claim_master_all_accounts(self):
-        """Claim master for all accounts sequentially with 0.1s delays"""
-        logger.info("🚀 Starting sequential ClaimMaster for all accounts...")
+        """Claim master for all accounts sequentially with iterative nonce fetching"""
+        logger.info("🚀 Starting sequential ClaimMaster with iterative nonce fetching...")
         
         start_time = time.time()
         
         print("\n" + "="*80)
-        print("🏆 SEQUENTIAL CLAIM MASTER EXECUTION")
+        print("🏆 SEQUENTIAL CLAIM MASTER EXECUTION - ITERATIVE NONCE")
         print("="*80)
         print(f"🎯 Target master address: {self.target_master_address}")
         print(f"📄 Contract: {self.address_manager_contract}")
         print(f"👥 Processing: {len(self.all_accounts)} accounts")
         print(f"⏱️  Delay between transactions: 100ms")
-        print(f"🔄 Processing: Sequential, one after another")
+        print(f"🔄 Nonce strategy: Fetch on-demand per account")
+        print(f"⚡ No initial nonce scanning - immediate start!")
         print("="*80)
         
         for i, account in enumerate(self.all_accounts):
             try:
-                # Process this account
+                # Process this account (nonce is fetched inside the function)
                 success, tx_hash = self.claim_master_single_account(account)
                 
                 if success:
-                    if (i + 1) % 100 == 0:  # Log every 100 successful transactions
+                    if i % 50 == 0:  # Log every 50 successful transactions
                         print(f"✅ Account {account['index']:04d}: ClaimMaster successful - TX: {tx_hash}")
                 else:
                     print(f"❌ Account {account['index']:04d}: ClaimMaster failed")
@@ -242,32 +221,40 @@ class SimpleClaimMasterScript:
         logger.info(f"🎉 ClaimMaster completed: {self.total_claims_successful} successful, {self.total_claims_failed} failed")
 
     def run(self):
-        """Main execution function"""
+        """Main execution function - starts immediately without nonce scanning"""
         try:
-            print("🏆 SIMPLE SEQUENTIAL CLAIM MASTER SCRIPT")
+            print("🏆 ITERATIVE SEQUENTIAL CLAIM MASTER SCRIPT")
             print("="*60)
             print(f"🎯 Target Master Address: {self.target_master_address}")
             print(f"📄 AddressManager Contract: {self.address_manager_contract}")
+            print(f"⚡ Mode: Iterative nonce fetching (no pre-scanning)")
             print("="*60)
             
-            # Initialize everything
+            # Initialize everything (NO nonce initialization)
             self.initialize_network()
             self.initialize_address_manager_contract()
             self.load_all_accounts()
-            self.initialize_account_nonces()
             
-            # Confirmation before proceeding
-            print(f"\n❓ Ready to execute ClaimMaster for all accounts:")
+            # Immediate start confirmation
+            print(f"\n❓ Ready to execute ClaimMaster immediately:")
             print(f"   • Total accounts: {len(self.all_accounts)}")
             print(f"   • Each account will claim master to: {self.target_master_address}")
+            print(f"   • Nonces fetched individually per account (no pre-scanning)")
             print(f"   • Sequential processing with 0.1s delays")
-            print(f"   • Estimated time: ~{len(self.all_accounts) * 0.1 / 60:.1f} minutes")
-            # Execute sequential ClaimMaster
-            self.sequential_claim_master_all_accounts()
+            print(f"   • Estimated time: ~{len(self.all_accounts) * 0.15 / 60:.1f} minutes (including nonce fetches)")
             
-            print(f"\n🎉 SUCCESS! Sequential ClaimMaster execution completed!")
-            print(f"🏆 All accounts have claimed master to {self.target_master_address}")
+            proceed = input("\n🚀 Start immediate ClaimMaster execution? (y/n): ").lower().strip()
             
+            if proceed == 'y':
+                # Execute sequential ClaimMaster immediately
+                self.sequential_claim_master_all_accounts()
+                
+                print(f"\n🎉 SUCCESS! Iterative ClaimMaster execution completed!")
+                print(f"🏆 All accounts have claimed master to {self.target_master_address}")
+                
+            else:
+                logger.info("🚫 ClaimMaster execution cancelled by user")
+
         except Exception as e:
             logger.error(f"💥 Fatal error: {e}")
             raise
